@@ -7,7 +7,7 @@ public class BookCopyModel
 {
     [BsonId]                                  // MongoDB _id field
     [BsonRepresentation(BsonType.ObjectId)]   // Allows string IDs
-    public string? Id { get; set; }
+    public string Id { get; set; } = null!;
 
     [BsonRepresentation(BsonType.ObjectId)]   // Allows string IDs
     public string? BookId { get; set; }

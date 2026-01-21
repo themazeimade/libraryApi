@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using System.Text.Json.Serialization;
 
 namespace LibraryApi.Models;
 
@@ -7,20 +8,23 @@ public class BookModel
 {
     [BsonId]                                  // MongoDB _id field
     [BsonRepresentation(BsonType.ObjectId)]   // Allows string IDs
-    public string? Id { get; set; }
+    public string? id { get; set; }
 
-    public string Title { get; set; } = null!;
-    public string Author { get; set; } = null!;
-    public string Publisher { get; set; } = null!;
-    public string Isbn { get; set; } = null!;
 
-    public int Pages { get; set; }
-    public int Edition { get; set; }
+    public string title { get; set; } = null!;
+    public string author { get; set; } = null!;
+    public string publisher { get; set; } = null!;
+    public string isbn { get; set; } = null!;
+
+    public int pages { get; set; }
+    public int edition { get; set; }
 
     [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
-    public DateTime DatePublished { get; set; }
+    [BsonElement("date_published")]
+    [JsonPropertyName("date_published")]
+    public DateTime datePublished { get; set; }
 
     [BsonIgnoreIfNull]
-    public String? Description { get; set; } = null!;
+    public String? description { get; set; } = null!;
 }
 

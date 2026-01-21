@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using LibraryApi.Services;
+using LibraryApi.Types;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,9 +18,26 @@ var privateKey = builder.Configuration["Jwt:SigningKey"];
 if (privateKey == null)
     return;
 
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy
+                .WithOrigins("https://localhost:5173") // React dev server
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
+});
+
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 builder.Services.AddSingleton<MongoDbService>();
+builder.Services.AddHostedService<MongoIndexInitializer>();
+builder.Services.Configure<TokenOptions>(builder.Configuration.GetSection("TokenOptions"));
+builder.Services.AddScoped<RefreshTokenService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(jwtOptions =>
@@ -29,12 +48,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
+        // RoleClaimType = "role",
         ValidIssuer = "my-library-api",
         ValidAudience = "my-library-api",
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(privateKey))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(privateKey)),
+        ClockSkew = TimeSpan.Zero
     };
 });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CustomAdmin", policy => policy.RequireClaim("role", ["Admin"]));
+});
 
 var app = builder.Build();
 
@@ -47,6 +71,7 @@ if (app.Environment.IsDevelopment())
     //     options.SwaggerEndpoint("/openapi/v1.json", "v1");
     // });
 }
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseHttpsRedirection();

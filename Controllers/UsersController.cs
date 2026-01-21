@@ -3,6 +3,7 @@ using LibraryApi.Services;
 using LibraryApi.Models;
 using MongoDB.Driver;
 using MongoDB.Bson;
+using Microsoft.AspNetCore.Identity;
 
 namespace LibraryApi.Controllers;
 
@@ -44,6 +45,11 @@ public class UserController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateUser([FromBody] UserModel user)
     {
+        if (user.Roles.Contains(UserRole.Admin)) return BadRequest("You can't give yourself admin role");
+        user.Roles = [];
+        user.Roles.Add(UserRole.Customer);
+        var hasher = new PasswordHasher<UserModel>();
+        user.PasswordHash = hasher.HashPassword(user, user.PasswordHash);
         await _mongo.Users.InsertOneAsync(user);
         return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
     }

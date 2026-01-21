@@ -3,10 +3,13 @@ using LibraryApi.Services;
 using LibraryApi.Models;
 using MongoDB.Driver;
 using MongoDB.Bson;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LibraryApi.Controllers;
 
 [ApiController]
+
+[Authorize]
 [Route("api/[controller]")]
 public class BooksController : ControllerBase
 {
@@ -17,6 +20,8 @@ public class BooksController : ControllerBase
         _mongo = mongo;
     }
     // Example GET endpoint (empty for now)
+    //
+    // [Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<IActionResult> GetBooks()
     {
@@ -31,7 +36,7 @@ public class BooksController : ControllerBase
             return BadRequest("Invalid book id");
 
         var book = await _mongo.Books
-            .Find(b => b.Id == id)
+            .Find(b => b.id == id)
             .FirstOrDefaultAsync();
 
         if (book == null)
@@ -42,21 +47,24 @@ public class BooksController : ControllerBase
 
     // Example POST endpoint (empty for now)
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateBook([FromBody] BookModel book)
     {
         await _mongo.Books.InsertOneAsync(book);
-        return CreatedAtAction(nameof(GetBook), new { id = book.Id }, book);
+        return CreatedAtAction(nameof(GetBook), new { id = book.id }, book);
     }
 
+
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateBook(string id, [FromBody] BookModel book)
     {
         if (!ObjectId.TryParse(id, out var _))
             return BadRequest("Invalid book id");
 
-        book.Id = id;
+        book.id = id;
 
-        var res = await _mongo.Books.ReplaceOneAsync(s => s.Id == book.Id, book);
+        var res = await _mongo.Books.ReplaceOneAsync(s => s.id == book.id, book);
 
         if (res.MatchedCount == 0) return NotFound();
 
@@ -74,7 +82,7 @@ public class BooksController : ControllerBase
         if (!ObjectId.TryParse(id, out var _))
             return BadRequest("Invalid book id");
 
-        var res = await _mongo.Books.DeleteOneAsync(s => s.Id == id);
+        var res = await _mongo.Books.DeleteOneAsync(s => s.id == id);
 
         if (res.DeletedCount == 0) return NotFound();
 
